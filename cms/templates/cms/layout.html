@@ -1,0 +1,310 @@
+<html lang="ut-8">
+{% load static %}
+{% load balancetags %}
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My Fruit Shop</title>
+    <link href="{% static 'cms/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <style>
+        input {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<!--                navbar-->
+{% include "cms/_nav.html" %}
+<!--                navbar end-->
+
+<div class="container-fluid" style="margin-top: 20px">
+    <div class="row">
+        <div class="col-md-8 table-responsive">
+            <!--                warehouse-->
+            {% include "cms/warehouse.html" %}
+            <!--                warehouse end-->
+            <div class="row">
+                <!--                Chat-->
+                {% include "cms/chat.html" %}
+                {{ room_name|json_script:"room-name" }}
+                <!--                Chat end-->
+                <!--                Bank-->
+                {% include "cms/bank.html" %}
+                <!--                Bank end-->
+            </div>
+        </div>
+        <div class="col-md-4">
+            <!--                Logging-->
+            {% include "cms/logging.html" %}
+            <!--                Logging end-->
+        </div>
+    </div>
+</div>
+<script src="{% static 'cms/js/bootstrap.min.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"
+        integrity="sha512-VEd+nq25CkR676O+pLBnDW09R7VQX9Mdiij052gVCp5yVH3jGtH70Ho/UUv4mJDsEdTvqRCFZg0NKGiojGnUCw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script>
+    // initial scroll
+    const chat = $("#chat");
+    const logging = $("#logging");
+
+    logging.scrollTop(logging.prop('scrollHeight'));
+    chat.scrollTop(chat.prop('scrollHeight'));
+    //
+
+    // initial data user
+    const user = "{{ request.user }}";
+    const user_id = "{{ request.user.id }}";
+    //
+
+
+    // websocket
+    const roomName = JSON.parse(document.getElementById('room-name').textContent);
+
+    const chatSocket = new WebSocket('ws://' + window.location.host + '/ws/chat/' + roomName + '/');
+    const bankSocket = new WebSocket('ws://' + window.location.host + '/ws/bank/' + roomName + '/');
+    const auditSocket = new WebSocket('ws://' + window.location.host + '/ws/audit/' + user_id + '/');
+    const fruitSocket = new WebSocket('ws://' + window.location.host + '/ws/fruit/' + roomName + '/');
+
+
+    auditSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        $(".progress-bar").css({'width': data.progress.current + '%'})
+        if (data.progress.current === 100) {
+            toastr.success('Бухгалтерский аудит успешно проведен')
+        }
+    };
+
+    chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        const time = data.time.split(':')[0] + ":" + data.time.split(':')[1]
+        chat.append("<p>" + time + " " + data.user + " - " + data.message + "</p>");
+        chat.scrollTop(chat.prop('scrollHeight'))
+    };
+
+    bankSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        const balance = data.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        $("#sum_view").text(balance + " USD")
+    };
+
+    fruitSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        $(".fruit_count-" + data.fruit_id + "").text(data.fruit_count)
+        if (data.log.includes('SUCCESS')) {
+            logging.append("<p style='color: green;'>" + data.log + "</p>");
+        } else {
+            logging.append("<p style='color: red;'>" + data.log + "</p>");
+        }
+
+    };
+
+    chatSocket.onclose = function (e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    bankSocket.onclose = function (e) {
+        console.error('Bank socket closed unexpectedly');
+    };
+
+    auditSocket.onclose = function (e) {
+        console.error('Audit socket closed unexpectedly');
+    };
+
+    fruitSocket.onclose = function (e) {
+        console.error('Fruit socket closed unexpectedly');
+    };
+
+    //
+
+
+    // send messages in chat
+
+
+    // press enter
+    $('#chat-message-input').on("keypress", function (e) {
+        if (e.which === 13) {
+            if (this.value) {
+                const message = this.value
+                if (user !== 'AnonymousUser') {
+                    chatSocket.send(JSON.stringify({
+                        'message': message,
+                        'user_id': user_id
+                    }));
+                    this.value = ''
+                } else {
+                    toastr.warning('Вы должны войти в свою учетную запись, чтобы отправлять сообщения.')
+                }
+            }
+        }
+    });
+
+    // press button
+    $("#chat-message-submit").on("click", function () {
+        const valueInput = $("#chat-message-input")
+        if (valueInput.val()) {
+            const message = valueInput.val()
+            if (user !== 'AnonymousUser') {
+                chatSocket.send(JSON.stringify({
+                    'message': message,
+                    'user_id': user_id
+                }));
+                valueInput.val('')
+            } else {
+                toastr.warning('Вы должны войти в свою учетную запись, чтобы отправлять сообщения.')
+            }
+        }
+    });
+
+    //
+
+
+    // Bank
+
+    $("#replenish, #withdraw").on("click", function () {
+        if (user !== 'AnonymousUser') {
+            const valueInput = $("#sum")
+            if (valueInput.val()) {
+                if (valueInput.val().length > 6) {
+                    toastr.warning('Слишком большая сумма для транзакции')
+                    valueInput.val('')
+                } else {
+                    if (valueInput.val() <= 0) {
+                        toastr.warning('Сумма должна быть больше 0')
+                        valueInput.val('')
+                    } else {
+                        send_ajax_for_bank(valueInput.val(), this.value)
+                        valueInput.val('')
+                    }
+                }
+            }
+        } else {
+            toastr.warning('Вы должны войти в свою учетную запись, чтобы управлять банком.')
+        }
+    });
+
+    function send_ajax_for_bank(value, flag) {
+        $.ajax({
+            type: "GET",
+            url: "{% url 'transactions' %}",
+            data: {
+                'value': value,
+                'flag': flag
+            },
+            success: function (response) {
+                if (response.status === 200) {
+                    toastr.success(response.message)
+                } else {
+                    toastr.warning(response.message)
+                }
+            },
+            error: function (response) {
+                toastr.warning(response.message)
+            }
+        })
+    }
+
+    //
+
+    // audit
+    $("#audit").on("click", function () {
+        if (user !== 'AnonymousUser') {
+            $.ajax({
+                type: "GET",
+                url: "{% url 'audit' %}",
+                success: function (response) {
+                    if (response.status === 202) {
+                        toastr.warning('Еше не выполнился предидущий аудит!')
+                    } else {
+
+                        toastr.info('Выполняется бухгалтерский аудит, пожалуйста подождите!')
+                        auditSocket.onmessage = function (e) {
+                            const data = JSON.parse(e.data);
+                            $(".progress-bar").css({'width': data.progress.current + '%'})
+                            if (data.progress.current === 100) {
+                                toastr.success('Бухгалтерский аудит успешно проведен')
+                            }
+                        };
+
+                        auditSocket.onclose = function (e) {
+                            console.error('Audit socket closed unexpectedly');
+                        };
+                    }
+                },
+                error: function (response) {
+                    console.log(response)
+                }
+            })
+        } else {
+            toastr.warning('Вы должны войти в свою учетную запись, чтобы проводить бухгалтерский аудит.')
+        }
+    });
+    //
+
+    // fruit tasks
+
+    const buy = $(".fruit-buy");
+    const sell = $(".fruit-sell");
+
+    buy.on("click", function () {
+        let value = this.value
+        tradeManager(value, 'buy')
+    })
+
+    sell.on("click", function () {
+        let value = this.value
+        tradeManager(value, 'sell')
+    })
+
+    function tradeManager(value, type) {
+        if (user !== 'AnonymousUser') {
+            let count = $(".fruit-count-" + value + "").val()
+            $(".fruit-count-" + value + "").val("")
+            if (count) {
+                if (count <= 0) {
+                    toastr.warning('Количество должна быть больше 0')
+                } else {
+                    send_ajax_for_warehouse(count, value, type)
+                }
+            } else {
+                toastr.info('Введите количество')
+            }
+        } else {
+            toastr.warning('Вы должны войти в свою учетную запись, чтобы проводить операции на складе.')
+        }
+    }
+
+    function send_ajax_for_warehouse(count, value, type) {
+        $.ajax({
+            type: "GET",
+            url: "{% url 'warehouse' %}",
+            data: {
+                'value': value,
+                'count': count,
+                'type': type
+            },
+            success: function (response) {
+            },
+            error: function (response) {
+                toastr.warning(response.message)
+            }
+        })
+    }
+
+
+    //
+
+</script>
+
+</body>
+</html>
+
+
+
+

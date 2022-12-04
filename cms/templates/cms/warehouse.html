@@ -1,0 +1,45 @@
+<table class="table table-bordered text-center">
+    <thead>
+    <tr>
+        <th colspan="4">
+            <h5>Товары на складе</h5>
+        </th>
+    </tr>
+    <tr style="background-color: #e5e5e5">
+        <th scope="col" style="width: 150px; min-width: 150px;">Название</th>
+        <th scope="col" style="width: 200px; min-width: 200px;">Текущее количество</th>
+        <th scope="col" style="width: 290px; min-width: 290px;">Действия</th>
+        <th scope="col" style="width: 300px; min-width: 300px;">Последняя операция</th>
+    </tr>
+    </thead>
+    {% for fruit in fruits %}
+        <tbody>
+        <tr>
+            <td>{{ fruit.name }}</td>
+            <td class="fruit_count-{{ fruit.id }}">{{ fruit.quantity }}</td>
+            <td>
+                <div class="row">
+                    <div class="col-md-4">
+                        <input type="number" class="form-control fruit-count-{{ fruit.id }}"
+                               placeholder="к-во">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="text-center" style="margin-top:2%">
+                            <button type="button" class="btn fruit-buy" value="{{ fruit.id }}"
+                                    style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .90rem; background-color: #cbe8ba">
+                                Купить
+                            </button>
+                            <button type="button" class="btn fruit-sell" value="{{ fruit.id }}"
+                                    style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .90rem; background-color: #ffe3ae">
+                                Продать
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </td>
+            <td>05.10.2022 10:20 - куплено 5 ед. за 20 usd</td>
+        </tr>
+        </tbody>
+    {% endfor %}
+</table>

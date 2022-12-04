@@ -1,0 +1,29 @@
+<nav class="navbar navbar-expand-lg" style="background-color: #ffecd7">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'home' %}">MyFruitShop</a>
+        <div>
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            </ul>
+            {% if request.user.is_authenticated %}
+            <span class="navbar-text">
+            {{ request.user }}
+                <a class="btn" href="{% url 'logout' %}"
+                   type="submit"
+                   style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem; background-color: #ffa382">Logout</a>
+            </span>
+            {% else %}
+            <form method="post" action="{% url 'home' %}" style="margin: 0">
+                <div class="d-flex">
+                    {% csrf_token %}
+                    {{ form.username }}
+                    {{ form.password }}
+                    <button type="submit" class="btn"
+                            style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem; background-color: #ffa382">
+                        Login
+                    </button>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</nav>

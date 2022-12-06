@@ -12,7 +12,6 @@ User = get_user_model()
 
 
 class ChatConsumer(WebsocketConsumer):
-    task_id = None
 
     def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
@@ -23,15 +22,12 @@ class ChatConsumer(WebsocketConsumer):
             self.room_group_name,
             self.channel_name,
         )
-        task = task_jester.delay()
-        self.task_id = task.id
 
     def disconnect(self, close_code):
         async_to_sync(self.channel_layer.group_discard)(
             self.room_group_name,
             self.channel_name,
         )
-        app.control.revoke(self.task_id, terminate=True)
 
     def receive(self, text_data=None, bytes_data=None):
         text_data_json = json.loads(text_data)

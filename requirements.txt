@@ -8,3 +8,5 @@ requests~=2.28.1
 Redis
 django_celery_beat
 django-redis
+translate
+asgiref~=3.5.2

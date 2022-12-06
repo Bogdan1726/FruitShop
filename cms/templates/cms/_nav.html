@@ -9,17 +9,17 @@
             {{ request.user }}
                 <a class="btn" href="{% url 'logout' %}"
                    type="submit"
-                   style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem; background-color: #ffa382">Logout</a>
+                   style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem; background-color: #ffa382">Выход</a>
             </span>
             {% else %}
-            <form method="post" action="{% url 'home' %}" style="margin: 0">
+            <form method="post" id="login_form" action="{% url 'home' %}" style="margin: 0">
                 <div class="d-flex">
                     {% csrf_token %}
                     {{ form.username }}
                     {{ form.password }}
                     <button type="submit" class="btn"
                             style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem; background-color: #ffa382">
-                        Login
+                        Вход
                     </button>
                 </div>
             </form>

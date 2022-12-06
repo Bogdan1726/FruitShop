@@ -8,6 +8,10 @@
     <title>My Fruit Shop</title>
     <link href="{% static 'cms/css/bootstrap.min.css' %}" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/jquery-form-validator/2.3.79/theme-default.min.css"
+          integrity="sha512-8wU/gsExpTv8PS32juUjuZx10OBHgxj5ZWoVDoJKvBrFy524wEKAUgS/64da3Qg4zD5kVwQh3+xFmzzOzFDAtg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
     <style>
         input {
             margin-right: 5px;
@@ -47,7 +51,28 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"
         integrity="sha512-VEd+nq25CkR676O+pLBnDW09R7VQX9Mdiij052gVCp5yVH3jGtH70Ho/UUv4mJDsEdTvqRCFZg0NKGiojGnUCw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"
+        integrity="sha512-rstIgDs0xPgmG6RX1Aba4KV5cWJbAMcvRCVmglpam9SoHZiUCyQVDdH2LPlxoHtrv17XWblE/V/PP+Tr04hbtA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+
+</script>
+
+<!--                Messages-->
+{% if messages %}
+    {% for message in messages %}
+        {% if message.tags == 'error' %}
+            <script>
+                toastr.error('<h7>{{ message }}<h7>')
+            </script>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+<!--                Messages-->
+
 
 <script>
     // initial scroll
@@ -229,6 +254,7 @@
                             $(".progress-bar").css({'width': data.progress.current + '%'})
                             if (data.progress.current === 100) {
                                 toastr.success('Бухгалтерский аудит успешно проведен')
+
                             }
                         };
 
@@ -297,10 +323,34 @@
         })
     }
 
-
     //
 
+    // validate
+
+
+    $('#login_form').validate({
+        rules: {
+            username: {
+                required: true,
+            },
+            password: {
+                required: true
+            },
+        },
+        messages: {
+            username: {
+                required: "",
+            },
+            password: {
+                required: "",
+            }
+        },
+        errorElement: 'span'
+    });
+    // validate end
+
 </script>
+
 
 </body>
 </html>

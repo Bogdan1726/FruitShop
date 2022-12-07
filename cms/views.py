@@ -22,7 +22,7 @@ class MainPage(View):
         form = self.form(request.POST)
         if form.is_valid():
             user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password'])
-            if user is not None and form.cleaned_data['username'] != 'Шутник':
+            if user is not None:
                 login(request, user)
                 return HttpResponseRedirect(reverse_lazy('home'))
             messages.error(request, 'Не верный логин или пароль')

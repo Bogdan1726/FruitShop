@@ -78,6 +78,8 @@
     // initial scroll
     const chat = $("#chat");
     const logging = $("#logging");
+    let progress_bar = $(".progress-bar")
+
 
     logging.scrollTop(logging.prop('scrollHeight'));
     chat.scrollTop(chat.prop('scrollHeight'));
@@ -100,7 +102,8 @@
 
     auditSocket.onmessage = function (e) {
         const data = JSON.parse(e.data);
-        $(".progress-bar").css({'width': data.progress.current + '%'})
+        progress_bar.css({'width': data.progress.current + '%'})
+        progress_bar.html(data.progress.current + '%')
         if (data.progress.current === 100) {
             toastr.success('Бухгалтерский аудит успешно проведен')
         }
@@ -208,6 +211,8 @@
                         valueInput.val('')
                     }
                 }
+            } else {
+                toastr.warning('Введите суму.')
             }
         } else {
             toastr.warning('Вы должны войти в свою учетную запись, чтобы управлять банком.')
@@ -247,17 +252,16 @@
                     if (response.status === 202) {
                         toastr.warning('Еше не выполнился предидущий аудит!')
                     } else {
-
                         toastr.info('Выполняется бухгалтерский аудит, пожалуйста подождите!')
                         auditSocket.onmessage = function (e) {
                             const data = JSON.parse(e.data);
-                            $(".progress-bar").css({'width': data.progress.current + '%'})
+                            progress_bar.css({'width': data.progress.current + '%'})
+                            progress_bar.html(data.progress.current + '%')
                             if (data.progress.current === 100) {
                                 toastr.success('Бухгалтерский аудит успешно проведен')
 
                             }
                         };
-
                         auditSocket.onclose = function (e) {
                             console.error('Audit socket closed unexpectedly');
                         };

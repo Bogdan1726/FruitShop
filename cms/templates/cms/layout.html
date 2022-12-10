@@ -16,6 +16,10 @@
         input {
             margin-right: 5px;
         }
+
+        .message-text {
+            margin-bottom: 1px;
+        }
     </style>
 </head>
 <body>
@@ -112,7 +116,7 @@
     chatSocket.onmessage = function (e) {
         const data = JSON.parse(e.data);
         const time = data.time.split(':')[0] + ":" + data.time.split(':')[1]
-        chat.append("<p>" + time + " " + data.user + " - " + data.message + "</p>");
+        chat.append("<p class='message-text'>" + time + " " + data.user + " - " + data.message + "</p>");
         chat.scrollTop(chat.prop('scrollHeight'))
     };
 
@@ -125,11 +129,13 @@
     fruitSocket.onmessage = function (e) {
         const data = JSON.parse(e.data);
         $(".fruit_count-" + data.fruit_id + "").text(data.fruit_count)
+        $(".fruit_operation-" + data.fruit_id + "").text(data.operation)
         if (data.log.includes('SUCCESS')) {
-            logging.append("<p style='color: green;'>" + data.log + "</p>");
+            logging.append("<p style='color: green; margin-bottom: 2px;'>" + data.log + "</p>");
         } else {
-            logging.append("<p style='color: red;'>" + data.log + "</p>");
+            logging.append("<p style='color: red; margin-bottom: 2px;'>" + data.log + "</p>");
         }
+        logging.scrollTop(chat.prop('scrollHeight'))
 
     };
 
@@ -158,7 +164,7 @@
     // press enter
     $('#chat-message-input').on("keypress", function (e) {
         if (e.which === 13) {
-            if (this.value) {
+            if (this.value && /^\s+$/.test(this.value) === false) {
                 const message = this.value
                 if (user !== 'AnonymousUser') {
                     chatSocket.send(JSON.stringify({
@@ -169,6 +175,8 @@
                 } else {
                     toastr.warning('Вы должны войти в свою учетную запись, чтобы отправлять сообщения.')
                 }
+            } else {
+                toastr.warning('Введите сообщение.')
             }
         }
     });
@@ -176,7 +184,7 @@
     // press button
     $("#chat-message-submit").on("click", function () {
         const valueInput = $("#chat-message-input")
-        if (valueInput.val()) {
+        if (valueInput.val() && /^\s+$/.test(valueInput.val()) === false) {
             const message = valueInput.val()
             if (user !== 'AnonymousUser') {
                 chatSocket.send(JSON.stringify({
@@ -187,6 +195,9 @@
             } else {
                 toastr.warning('Вы должны войти в свою учетную запись, чтобы отправлять сообщения.')
             }
+        } else {
+            valueInput.focus();
+            toastr.warning('Введите сообщение.')
         }
     });
 
@@ -212,6 +223,7 @@
                     }
                 }
             } else {
+                valueInput.focus();
                 toastr.warning('Введите суму.')
             }
         } else {
@@ -304,6 +316,8 @@
                 }
             } else {
                 toastr.info('Введите количество')
+                $(".fruit-count-" + value + "").focus();
+
             }
         } else {
             toastr.warning('Вы должны войти в свою учетную запись, чтобы проводить операции на складе.')

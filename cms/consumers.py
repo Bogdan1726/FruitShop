@@ -12,6 +12,8 @@ User = get_user_model()
 
 
 class ChatConsumer(WebsocketConsumer):
+    room_name = None
+    room_group_name = None
 
     def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
@@ -63,6 +65,9 @@ class ChatConsumer(WebsocketConsumer):
 
 
 class BankConsumer(WebsocketConsumer):
+    room_name = None
+    room_group_name = None
+
     def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = f'bank_{self.room_name}'
@@ -87,6 +92,9 @@ class BankConsumer(WebsocketConsumer):
 
 
 class AuditConsumer(WebsocketConsumer):
+    room_name = None
+    room_group_name = None
+
     def connect(self):
         user = self.scope['user']
         self.room_name = self.scope['url_route']['kwargs']['room_name']
@@ -112,6 +120,9 @@ class AuditConsumer(WebsocketConsumer):
 
 
 class WarehouseConsumer(WebsocketConsumer):
+    room_name = None
+    room_group_name = None
+
     def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = f'fruit_{self.room_name}'
@@ -130,10 +141,12 @@ class WarehouseConsumer(WebsocketConsumer):
 
     def update_warehouse(self, event):
         log = event['log']
+        operation = event['operation']
         fruit_id = event['fruit_id']
         fruit_count = event['fruit_count']
         self.send(text_data=json.dumps({
             'log': log,
+            'operation': operation,
             'fruit_id': fruit_id,
             'fruit_count': fruit_count
         }))

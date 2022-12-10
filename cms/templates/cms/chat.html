@@ -5,16 +5,7 @@
         </div>
         <div id="chat" class="border" style="overflow-y: scroll; height:250px; padding: 10px">
             {% for message in history_chat reversed %}
-                {% ifchanged %}
-                    {% if message.created|date:"Y-m-d" == current_data|date:"Y-m-d" %}
-                        <p class="text-center">Сегодня</p>
-                    {% elif message.created|date:"Y-m-d" == yesterday|date:"Y-m-d" %}
-                        <p class="text-center">Вчера</p>
-                    {% else %}
-                        <p class="text-center">{{ message.created|date:"d E" }}</p>
-                    {% endif %}
-                {% endifchanged %}
-                <p>{{ message.created|date:"H:i" }} {{ message }} - {{ message.message }}</p>
+                <p class="message-text">{{ message.created|date:"H:i" }} {{ message }} - {{ message.message }}</p>
             {% endfor %}
         </div>
         <div class="row text-center" style="padding: 10px">

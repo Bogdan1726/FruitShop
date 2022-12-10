@@ -38,7 +38,11 @@
                 </div>
 
             </td>
-            <td>05.10.2022 10:20 - куплено 5 ед. за 20 usd</td>
+            {% if fruit.logging.first %}
+            <td class="fruit_operation-{{ fruit.id }}">{{ fruit.logging.first.get_operation }}</td>
+            {% else %}
+            <td class="fruit_operation-{{ fruit.id }}">Нет операций</td>
+            {% endif %}
         </tr>
         </tbody>
     {% endfor %}

@@ -5,12 +5,13 @@ from celery import shared_task, signals
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from django.contrib.auth import get_user_model
-from cms.models import Fruit, Bank
+from cms.models import Fruit, Bank, Logging
 from config.settings import API_JESTER
 from users.models import Chat
 from channels.layers import get_channel_layer
 import requests
 from django.core.cache import cache
+import translators as ts  # noqa
 
 logger = get_task_logger(__name__)
 
@@ -36,18 +37,19 @@ def task_jester(self):
         if response.status_code == 200:
             response_data = response.json()
             text = response_data.get('joke')
-            Chat.objects.create(message=str(text))
+            translated_joke = ts.bing(text, from_language='en', to_language='ru')
+            Chat.objects.create(message=str(translated_joke))
             async_to_sync(channel_layer.group_send)(
                 'chat_warehouse',
                 {
                     'type': 'chat_message',
-                    'message': str(text),
+                    'message': str(translated_joke),
                     'user': 'Шутник',
                     'time': str(datetime.datetime.now().time())
                 }
             )
             logger.info('Task jester successful')
-            task_jester.apply_async(countdown=int(len(text)))
+            task_jester.apply_async(countdown=int(len(translated_joke)))
         else:
             raise Exception()
     except Exception as exp:
@@ -61,18 +63,9 @@ def task_check_warehouse(self, user):
     The task is doing accounting. By means of websocket draws progress on the front
     """
     try:
-        counter = 0
         res = AsyncResult(self.request.id)
         for i in range(1, 26):
-            counter += 100000 ** 100000
-            counter += 100000 ** 100000
-            counter += 100000 ** 100000
-            counter += 100000 ** 100000
-            counter += 100000 ** 100000
-            counter += 100000 ** 100000
-            counter += 100000 ** 100000
-            counter += 100000 ** 100000
-            counter += 100000 ** 100000
+            counter = [100000 ** 100000 for _ in range(10)]  # noqa
             self.update_state(state='PROGRESS',
                               meta={'current': i * 4, 'total': 100})
             async_to_sync(channel_layer.group_send)(
@@ -90,28 +83,36 @@ def task_check_warehouse(self, user):
 
 @shared_task(bind=True)
 def task_buy_fruits(self, value, count):
-    current_date = datetime.datetime.now().date()
-    current_time = datetime.datetime.now().time()
+    date = datetime.datetime.now()
     fruit = Fruit.objects.get(pk=value)
     bank = Bank.objects.all().first()
     price = randint(1, 4)
     summa = (int(price) * int(count))
     if summa > int(bank.balance):
-        log = f'{current_date.strftime("%d.%m.%Y")} {current_time.strftime("%H:%M:%S")} - ERROR: Недостаточно ' \
-              f'средств на счету для покупкм {count} {fruit.name}, покупки отменена.'
+        operation = None
+        Logging.objects.create(type_logging='ERROR', amount=int(count), usd=int(summa), fruit_id=fruit.id)
+        log = f'{date.strftime("%d.%m.%Y %H:%M")} - ERROR: Недостаточно ' \
+              f'средств на счету для покупки товара {fruit.name} в количестве {count}, покупка отменена.'
     else:
         fruit.quantity += int(count)
         fruit.save()
         bank.balance -= summa
         bank.save()
-        log = f'{current_date.strftime("%d.%m.%Y")} {current_time.strftime("%H:%M:%S")} - SUCCESS: Покупка ' \
-              f'{count} {fruit.name}. Со счёта списано {summa} USD, покупка завершена.'
+        Logging.objects.create(type_operation='BOUGHT', amount=int(count), usd=int(summa), fruit_id=fruit.id)
+        Logging.objects.bulk_create([
+            Logging(type_operation='BOUGHT', amount=int(count), usd=int(summa), fruit_id=fruit.id),
+            Logging(type_logging='ERROR', amount=int(count), usd=int(summa), fruit_id=fruit.id),
+        ])
+        log = f'{date.strftime("%d.%m.%Y %H:%M")} - SUCCESS: Покупка ' \
+              f'товара {fruit.name} в количестве {count}. Со счёта списано {summa} USD, покупка завершена.'
+        operation = f'{date.strftime("%d.%m.%Y %H:%M")} - куплены  {fruit.name} в количестве {count} шт. за {summa} usd'
 
     async_to_sync(channel_layer.group_send)(
         'fruit_warehouse',
         {
             'type': 'update_warehouse',
             'log': log,
+            'operation': operation,
             'fruit_id': fruit.id,
             'fruit_count': fruit.quantity,
         }
@@ -127,6 +128,7 @@ def task_buy_fruits(self, value, count):
 
 @shared_task(bind=True)
 def task_sell_fruits(self, value, count):
+    date = datetime.datetime.now()
     current_date = datetime.datetime.now().date()
     current_time = datetime.datetime.now().time()
     fruit = Fruit.objects.get(pk=value)
@@ -134,6 +136,7 @@ def task_sell_fruits(self, value, count):
     price = randint(1, 4)
     summa = (int(price) * int(count))
     if int(count) > int(fruit.quantity):
+        operation = None
         log = f'{current_date.strftime("%d.%m.%Y")} {current_time.strftime("%H:%M:%S")} - ERROR: Недостаточное ' \
               f'количество {fruit.name} на складе, продажа отменена.'
     else:
@@ -141,14 +144,22 @@ def task_sell_fruits(self, value, count):
         fruit.save()
         bank.balance += summa
         bank.save()
+        Logging.objects.create(
+            type_operation='SOLD',
+            amount=int(count),
+            usd=int(summa),
+            fruit_id=fruit.id
+        )
         log = f'{current_date.strftime("%d.%m.%Y")} {current_time.strftime("%H:%M:%S")} - SUCCESS: Продажа ' \
               f'{count} {fruit.name}. На счёт зачислено {summa} USD, продажа завершена.'
+        operation = f'{date.strftime("%d.%m.%Y %H:%M")} - проданы  {fruit.name} в количестве {count} шт. за {summa} usd'
 
     async_to_sync(channel_layer.group_send)(
         'fruit_warehouse',
         {
             'type': 'update_warehouse',
             'log': log,
+            'operation': operation,
             'fruit_id': fruit.id,
             'fruit_count': fruit.quantity,
         }

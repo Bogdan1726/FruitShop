@@ -5,7 +5,7 @@ from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views import View
-from .models import Fruit, Bank
+from .models import Fruit, Bank, Logging
 from users.forms import UserLoginForm
 from django.contrib.auth import authenticate, login
 from users.models import Chat
@@ -36,6 +36,7 @@ class MainPage(View):
             'history_chat': Chat.objects.select_related('user').order_by('-id')[:40],
             'room_name': self.room_name,
             'current_data': datetime.datetime.now(),
+            'history_logging': Logging.objects.select_related('fruit').order_by('-id')[:40],
             'yesterday': datetime.datetime.now() - datetime.timedelta(days=1)
         }
 

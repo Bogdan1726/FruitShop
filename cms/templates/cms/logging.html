@@ -3,5 +3,12 @@
         ЛОГИ
     </div>
     <div id="logging" class="border" style="overflow-y: scroll; height:742px; padding: 10px">
+        {% for log in history_logging reversed %}
+            {% if log.type_logging == "SUCCESS" %}
+                <p style='color: green; margin-bottom: 2px;'>{{ log.get_log }}</p>
+            {% else %}
+                <p style='color: red; margin-bottom: 2px;'>{{ log.get_log }}</p>
+            {% endif %}
+        {% endfor %}
     </div>
 </div>

@@ -10,3 +10,4 @@ django_celery_beat
 django-redis
 translate
 asgiref~=3.5.2
+translate-api

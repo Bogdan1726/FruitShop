@@ -50,10 +50,13 @@
         </div>
         <div class="row" style="padding: 20px">
             <div class="col-md-6">
-                <button id="withdraw" type="button" class="btn" value="false"
-                        style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .90rem; background-color: #d4e3fc">
-                    Загрузить декларации
-                </button>
+                <form method="POST">
+                    {{ file_form.file }}
+                    <button type="submit" class="btn" value="false"
+                            style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .90rem; background-color: #d4e3fc">
+                        Загрузить декларации
+                    </button>
+                </form>
             </div>
             <div class="col-md-6" style="padding-top: 1%;">
                 <p>

@@ -44,4 +44,6 @@ start_worker:
 start_beat:
 	celery -A $(PROJECT) beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
 
+start_flower:
+	celery -A $(PROJECT) flower --port=5566
 # //

@@ -82,7 +82,7 @@ def task_check_warehouse(self, user):
 
 
 @shared_task(bind=True)
-def task_buy_fruits(self, value, count):
+def task_buy_fruits(self, value, count=randint(1, 20)):
     date = datetime.datetime.now()
     fruit = Fruit.objects.get(pk=value)
     bank = Bank.objects.all().first()
@@ -91,20 +91,17 @@ def task_buy_fruits(self, value, count):
     if summa > int(bank.balance):
         operation = None
         Logging.objects.create(type_logging='ERROR', amount=int(count), usd=int(summa), fruit_id=fruit.id)
-        log = f'{date.strftime("%d.%m.%Y %H:%M")} - ERROR: Недостаточно ' \
-              f'средств на счету для покупки товара {fruit.name} в количестве {count}, покупка отменена.'
+        log = f'{date.strftime("%d.%m.%Y %H:%M")} - ERROR: Поставщик привёз товар {fruit.name} ' \
+              f'в количестве {count} шт. Недостаточно средств на счету, закупка отменена.'
     else:
         fruit.quantity += int(count)
         fruit.save()
         bank.balance -= summa
         bank.save()
-        Logging.objects.create(type_operation='BOUGHT', amount=int(count), usd=int(summa), fruit_id=fruit.id)
-        Logging.objects.bulk_create([
-            Logging(type_operation='BOUGHT', amount=int(count), usd=int(summa), fruit_id=fruit.id),
-            Logging(type_logging='ERROR', amount=int(count), usd=int(summa), fruit_id=fruit.id),
-        ])
-        log = f'{date.strftime("%d.%m.%Y %H:%M")} - SUCCESS: Покупка ' \
-              f'товара {fruit.name} в количестве {count}. Со счёта списано {summa} USD, покупка завершена.'
+        Logging.objects.create(
+            type_logging='SUCCESS', type_operation='BOUGHT', amount=int(count), usd=int(summa), fruit_id=fruit.id)
+        log = f'{date.strftime("%d.%m.%Y %H:%M")} - SUCCESS: Поставщик привёз товар {fruit.name} ' \
+              f'в количестве {count} шт. Со счёта списано {summa} USD, покупка завершена.'
         operation = f'{date.strftime("%d.%m.%Y %H:%M")} - куплены  {fruit.name} в количестве {count} шт. за {summa} usd'
 
     async_to_sync(channel_layer.group_send)(
@@ -127,31 +124,29 @@ def task_buy_fruits(self, value, count):
 
 
 @shared_task(bind=True)
-def task_sell_fruits(self, value, count):
+def task_sell_fruits(self, value, count=randint(1, 20)):
     date = datetime.datetime.now()
-    current_date = datetime.datetime.now().date()
-    current_time = datetime.datetime.now().time()
     fruit = Fruit.objects.get(pk=value)
     bank = Bank.objects.all().first()
     price = randint(1, 4)
     summa = (int(price) * int(count))
     if int(count) > int(fruit.quantity):
         operation = None
-        log = f'{current_date.strftime("%d.%m.%Y")} {current_time.strftime("%H:%M:%S")} - ERROR: Недостаточное ' \
-              f'количество {fruit.name} на складе, продажа отменена.'
+        Logging.objects.create(
+            type_logging='ERROR', provider=False, amount=int(count), usd=int(summa), fruit_id=fruit.id)
+        log = f'{date.strftime("%d.%m.%Y %H:%M")} - ERROR: Невозможно продать товар ' \
+              f'{fruit.name} в количестве {count} шт. Недостаточно на складе, продажа отменена.'
     else:
         fruit.quantity -= int(count)
         fruit.save()
         bank.balance += summa
         bank.save()
         Logging.objects.create(
-            type_operation='SOLD',
-            amount=int(count),
-            usd=int(summa),
+            type_logging='SUCCESS', type_operation='SOLD', provider=False, amount=int(count), usd=int(summa),
             fruit_id=fruit.id
         )
-        log = f'{current_date.strftime("%d.%m.%Y")} {current_time.strftime("%H:%M:%S")} - SUCCESS: Продажа ' \
-              f'{count} {fruit.name}. На счёт зачислено {summa} USD, продажа завершена.'
+        log = f'{date.strftime("%d.%m.%Y %H:%M")} - SUCCESS: Продажа товара ' \
+              f'{fruit.name} в количестве {count} шт. На счёт зачислено {summa} USD, продажа завершена.'
         operation = f'{date.strftime("%d.%m.%Y %H:%M")} - проданы  {fruit.name} в количестве {count} шт. за {summa} usd'
 
     async_to_sync(channel_layer.group_send)(

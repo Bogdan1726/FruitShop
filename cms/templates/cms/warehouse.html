@@ -38,7 +38,7 @@
                 </div>
 
             </td>
-            {% if fruit.logging.first %}
+            {% if fruit.logging.first.get_operation %}
             <td class="fruit_operation-{{ fruit.id }}">{{ fruit.logging.first.get_operation }}</td>
             {% else %}
             <td class="fruit_operation-{{ fruit.id }}">Нет операций</td>

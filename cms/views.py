@@ -1,10 +1,10 @@
 import datetime
-
-import translate
-from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
+from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views import View
+
+from .forms import DeclarationForm
 from .models import Fruit, Bank, Logging
 from users.forms import UserLoginForm
 from django.contrib.auth import authenticate, login
@@ -16,10 +16,12 @@ from django.contrib import messages
 
 class MainPage(View):
     form = UserLoginForm
+    file_form = DeclarationForm
     room_name = 'warehouse'
 
     def post(self, request):
         form = self.form(request.POST)
+        file_form = self.form(request.POST)
         if form.is_valid():
             user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password'])
             if user is not None:
@@ -31,6 +33,7 @@ class MainPage(View):
     def get(self, request):
         context = {
             'form': self.form(),
+            'file_form': self.file_form(),
             'fruits': Fruit.objects.all(),
             'bank': Bank.objects.first(),
             'history_chat': Chat.objects.select_related('user').order_by('-id')[:40],
@@ -45,7 +48,7 @@ class MainPage(View):
 
 def transactions(request):
     if request.is_ajax():
-        balance = None
+        balance = None  # noqa
         value = request.GET.get('value')
         flag = True if request.GET.get('flag') == 'true' else False
         if flag and value:
@@ -89,7 +92,7 @@ def warehouse(request):
                 task_sell_fruits.delay(value, count)
             else:
                 return JsonResponse({'status': 400})
-
             return JsonResponse({'status': 200})
-        except Exception:
+        except Exception as exp:
+            print(exp)
             return JsonResponse({'status': 400})

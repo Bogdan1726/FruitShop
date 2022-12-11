@@ -14,6 +14,19 @@ class Fruit(models.Model):
         ordering = ('name',)
 
 
+class Bank(models.Model):
+    objects = None
+    balance = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f'{self.balance}'
+
+
+class Declaration(models.Model):
+    date = models.DateField(auto_now_add=True)
+    file = models.FileField(upload_to='files')
+
+
 class Logging(models.Model):
     class TypeOperation(models.TextChoices):
         BOUGHT = 'BOUGHT', _('Куплено')
@@ -28,6 +41,7 @@ class Logging(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     amount = models.PositiveIntegerField()
     usd = models.PositiveIntegerField()
+    provider = models.BooleanField(default=True)
     fruit = models.ForeignKey(Fruit, on_delete=models.CASCADE, related_name='logging')
 
     def __str__(self):
@@ -41,22 +55,24 @@ class Logging(models.Model):
         format_date = self.date.strftime("%d.%m.%Y %H:%M")
         if self.type_operation == 'BOUGHT':
             return f'{format_date} - куплены  {self.fruit.name} в количестве {self.amount} шт. за {self.usd} usd'
-        return f'{format_date} - проданы {self.fruit.name} в количестве {self.amount} шт.  за {self.usd} usd'
+        elif self.type_operation == 'SOLD':
+            return f'{format_date} - проданы {self.fruit.name} в количестве {self.amount} шт.  за {self.usd} usd'
 
     @property
     def get_log(self):
         format_date = self.date.strftime("%d.%m.%Y %H:%M")
         if self.type_logging == 'SUCCESS':
-            return f'{format_date} - SUCCESS: Покупка ' \
-                   f'товара {self.fruit.name} в количестве {self.amount}. Со счёта списано {self.usd} ' \
-                   f'USD, покупка завершена.'
-        return f'{format_date} - ERROR: Недостаточно ' \
-               f'средств на счету для покупки товара {self.fruit.name} в количестве {self.amount}, покупка отменена.'
-
-
-class Bank(models.Model):
-    objects = None
-    balance = models.PositiveIntegerField()
-
-    def __str__(self):
-        return f'{self.balance}'
+            if self.provider:
+                return f'{format_date} - SUCCESS: Поставщик привёз товар {self.fruit.name} ' \
+                       f'в количестве {self.amount} шт. Со счёта списано {self.usd} USD, покупка завершена.'
+            else:
+                return f'{format_date} - SUCCESS: Продажа товара ' \
+                       f'{self.fruit.name} в количестве {self.amount} шт. На счёт зачислено {self.usd} USD, ' \
+                       f'продажа завершена.'
+        else:
+            if self.provider:
+                return f'{format_date} - ERROR: Поставщик привёз товар {self.fruit.name} ' \
+                       f'в количестве {self.amount} шт. Недостаточно средств на счету, закупка отменена.'
+            else:
+                return f'{format_date} - ERROR: Невозможно продать товар ' \
+                       f'{self.fruit.name} в количестве {self.amount} шт. Недостаточно на складе, продажа отменена.'

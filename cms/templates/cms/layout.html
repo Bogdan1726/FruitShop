@@ -129,7 +129,9 @@
     fruitSocket.onmessage = function (e) {
         const data = JSON.parse(e.data);
         $(".fruit_count-" + data.fruit_id + "").text(data.fruit_count)
-        $(".fruit_operation-" + data.fruit_id + "").text(data.operation)
+        if (data.operation !== null) {
+            $(".fruit_operation-" + data.fruit_id + "").text(data.operation)
+        }
         if (data.log.includes('SUCCESS')) {
             logging.append("<p style='color: green; margin-bottom: 2px;'>" + data.log + "</p>");
         } else {

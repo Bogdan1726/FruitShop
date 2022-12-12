@@ -90,6 +90,12 @@ class BankConsumer(WebsocketConsumer):
             'balance': balance,
         }))
 
+    def new_declaration(self, event):
+        amount = event['amount']
+        self.send(text_data=json.dumps({
+            'amount': amount,
+        }))
+
 
 class AuditConsumer(WebsocketConsumer):
     room_name = None

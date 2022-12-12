@@ -5,13 +5,15 @@ from celery import shared_task, signals
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from django.contrib.auth import get_user_model
-from cms.models import Fruit, Bank, Logging
+from cms.models import Fruit, Bank, Logging, Declaration
+from config.celery import app
 from config.settings import API_JESTER
 from users.models import Chat
 from channels.layers import get_channel_layer
 import requests
 from django.core.cache import cache
 import translators as ts  # noqa
+from django_celery_beat.models import PeriodicTask, IntervalSchedule, PeriodicTasks
 
 logger = get_task_logger(__name__)
 
@@ -20,10 +22,17 @@ channel_layer = get_channel_layer()
 User = get_user_model()
 
 
-@signals.worker_ready.connect()
-def at_start(sender, **kwargs):
-    cache.clear()
-    task_jester.delay()
+@app.on_after_finalize.connect
+def setup_periodic_tasks(sender, **kwargs):
+    # Calls test('hello') every 10 seconds.
+    # cache.clear()
+    sender.add_periodic_task(10, test.s(), name='test_test')
+
+
+@app.task
+def test():
+    print('Test')
+    return 'Test'
 
 
 @shared_task(bind=True)
@@ -82,6 +91,30 @@ def task_check_warehouse(self, user):
 
 
 @shared_task(bind=True)
+def task_update_declaration(self):
+    """
+    The task for declarations check quantity
+    """
+    count = Declaration.objects.filter(date=datetime.datetime.now()).count()
+    async_to_sync(channel_layer.group_send)(
+        'bank_warehouse',
+        {
+            'type': 'new_declaration',
+            'amount': count
+        }
+    )
+
+
+@shared_task(bind=True)
+def task_clear_old_log(self):
+    """
+    The task for old log clear
+    """
+    before_yesterday = datetime.datetime.now() - datetime.timedelta(2)
+    Logging.objects.filter(date__lt=before_yesterday).delete()
+
+
+@shared_task(bind=True)
 def task_buy_fruits(self, value, count=randint(1, 20)):
     date = datetime.datetime.now()
     fruit = Fruit.objects.get(pk=value)
@@ -124,11 +157,11 @@ def task_buy_fruits(self, value, count=randint(1, 20)):
 
 
 @shared_task(bind=True)
-def task_sell_fruits(self, value, count=randint(1, 20)):
+def task_sell_fruits(self, value, count=randint(5, 20)):
     date = datetime.datetime.now()
     fruit = Fruit.objects.get(pk=value)
     bank = Bank.objects.all().first()
-    price = randint(1, 4)
+    price = randint(1, 2)
     summa = (int(price) * int(count))
     if int(count) > int(fruit.quantity):
         operation = None

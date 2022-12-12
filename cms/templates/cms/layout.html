@@ -20,6 +20,27 @@
         .message-text {
             margin-bottom: 1px;
         }
+
+        .btn-file {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-file input[type=file] {
+            position: absolute;
+            top: 0;
+            right: 0;
+            min-width: 100%;
+            min-height: 100%;
+            font-size: 100px;
+            text-align: right;
+            filter: alpha(opacity=0);
+            opacity: 0;
+            outline: none;
+            background: white;
+            cursor: inherit;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -71,9 +92,15 @@
             <script>
                 toastr.error('<h7>{{ message }}<h7>')
             </script>
+        {% else %}
+            <script>
+                toastr.success('<h7>{{ message }}<h7>')
+            </script>
         {% endif %}
     {% endfor %}
 {% endif %}
+
+
 
 <!--                Messages-->
 
@@ -94,6 +121,19 @@
     const user_id = "{{ request.user.id }}";
     //
 
+    // declaration load
+    function file_valid(element) {
+        if (element.files[0]) {
+            let file = element.files[0]
+            if (file.size >= 20971520) {
+                toastr.error('Размер файла не должен превышать 20MB')
+            } else {
+                $("#declaration_form").submit()
+            }
+        }
+    }
+
+    //
 
     // websocket
     const roomName = JSON.parse(document.getElementById('room-name').textContent);
@@ -122,8 +162,12 @@
 
     bankSocket.onmessage = function (e) {
         const data = JSON.parse(e.data);
-        const balance = data.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-        $("#sum_view").text(balance + " USD")
+        if (data.balance) {
+            const balance = data.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+            $("#sum_view").text(balance + " USD")
+        } else {
+            $("#declaration_count").html(data.amount)
+        }
     };
 
     fruitSocket.onmessage = function (e) {
@@ -137,7 +181,7 @@
         } else {
             logging.append("<p style='color: red; margin-bottom: 2px;'>" + data.log + "</p>");
         }
-        logging.scrollTop(chat.prop('scrollHeight'))
+        logging.scrollTop(logging.prop('scrollHeight'))
 
     };
 
@@ -307,9 +351,10 @@
     })
 
     function tradeManager(value, type) {
+        let fruit_count = $(".fruit-count-" + value + "")
         if (user !== 'AnonymousUser') {
-            let count = $(".fruit-count-" + value + "").val()
-            $(".fruit-count-" + value + "").val("")
+            let count = fruit_count.val()
+            fruit_count.val("")
             if (count) {
                 if (count <= 0) {
                     toastr.warning('Количество должна быть больше 0')
@@ -318,7 +363,7 @@
                 }
             } else {
                 toastr.info('Введите количество')
-                $(".fruit-count-" + value + "").focus();
+                fruit_count.focus();
 
             }
         } else {

@@ -8,15 +8,15 @@
     <tr style="background-color: #e5e5e5">
         <th scope="col" style="width: 150px; min-width: 150px;">Название</th>
         <th scope="col" style="width: 200px; min-width: 200px;">Текущее количество</th>
-        <th scope="col" style="width: 290px; min-width: 290px;">Действия</th>
+        <th scope="col" style="width: 350px; min-width: 350px;">Действия</th>
         <th scope="col" style="width: 300px; min-width: 300px;">Последняя операция</th>
     </tr>
     </thead>
     {% for fruit in fruits %}
         <tbody>
         <tr>
-            <td>{{ fruit.name }}</td>
-            <td class="fruit_count-{{ fruit.id }}">{{ fruit.quantity }}</td>
+            <td style="padding: 15px;">{{ fruit.name }}</td>
+            <td style="padding: 15px;" class="fruit_count-{{ fruit.id }}">{{ fruit.quantity }}</td>
             <td>
                 <div class="row">
                     <div class="col-md-4">
@@ -25,11 +25,11 @@
                     </div>
                     <div class="col-md-8">
                         <div class="text-center" style="margin-top:2%">
-                            <button type="button" class="btn fruit-buy" value="{{ fruit.id }}"
+                            <button type="button" class="btn fruit-buy btn-outline-dark" value="{{ fruit.id }}"
                                     style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .90rem; background-color: #cbe8ba">
                                 Купить
                             </button>
-                            <button type="button" class="btn fruit-sell" value="{{ fruit.id }}"
+                            <button type="button" class="btn fruit-sell btn-outline-dark" value="{{ fruit.id }}"
                                     style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .90rem; background-color: #ffe3ae">
                                 Продать
                             </button>
@@ -38,10 +38,18 @@
                 </div>
 
             </td>
-            {% if fruit.logging.first.get_operation %}
-            <td class="fruit_operation-{{ fruit.id }}">{{ fruit.logging.first.get_operation }}</td>
+            {% if fruit.get_success_log %}
+                <td class="fruit_operation-{{ fruit.id }}">
+                    {% if fruit.get_success_log.type_operation == "BOUGHT" %}
+                        {{ fruit.get_success_log.date|date:"d.m.Y H:i" }}  - куплены {{ fruit.name }} в количестве
+                        {{ fruit.get_success_log.amount }} шт. за {{ fruit.get_success_log.usd }} usd
+                    {% elif fruit.get_success_log.type_operation == "SOLD" %}
+                        {{ fruit.get_success_log.date|date:"d.m.Y H:i" }}  - проданы {{ fruit.name }} в количестве
+                        {{ fruit.get_success_log.amount }} шт. за {{ fruit.get_success_log.usd }} usd
+                    {% endif %}
+                </td>
             {% else %}
-            <td class="fruit_operation-{{ fruit.id }}">Нет операций</td>
+                <td class="fruit_operation-{{ fruit.id }}">Нет операций</td>
             {% endif %}
         </tr>
         </tbody>

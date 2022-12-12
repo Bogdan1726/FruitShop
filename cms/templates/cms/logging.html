@@ -5,9 +5,29 @@
     <div id="logging" class="border" style="overflow-y: scroll; height:742px; padding: 10px">
         {% for log in history_logging reversed %}
             {% if log.type_logging == "SUCCESS" %}
-                <p style='color: green; margin-bottom: 2px;'>{{ log.get_log }}</p>
+                <p style='color: green; margin-bottom: 2px;'>
+                    {% if log.provider %}
+                        {{ log.date|date:"d.m.Y H:i" }} - {{ log.type_logging }}: Поставщик привёз товар
+                        {{ log.fruit.name }} в количестве {{ log.amount }} шт. Со счёта списано {{ log.usd }} USD,
+                        покупка завершена.
+                    {% else %}
+                        {{ log.date|date:"d.m.Y H:i" }} - {{ log.type_logging }}: Продажа товара
+                        {{ log.fruit.name }} в количестве {{ log.amount }} шт. На счёт зачислено {{ log.usd }} USD,
+                        продажа завершена.
+                    {% endif %}
+                </p>
             {% else %}
-                <p style='color: red; margin-bottom: 2px;'>{{ log.get_log }}</p>
+                <p style='color: red; margin-bottom: 2px;'>
+                    {% if log.provider %}
+                        {{ log.date|date:"d.m.Y H:i" }} - {{ log.type_logging }}: Поставщик привёз товар
+                        {{ log.fruit.name }} в количестве {{ log.amount }} шт.
+                        Недостаточно средств на счету, закупка отменена.
+                    {% else %}
+                        {{ log.date|date:"d.m.Y H:i" }} - {{ log.type_logging }}: Невозможно продать товар
+                        {{ log.fruit.name }} в количестве {{ log.amount }} шт.
+                        Недостаточно на складе, продажа отменена.
+                    {% endif %}
+                </p>
             {% endif %}
         {% endfor %}
     </div>

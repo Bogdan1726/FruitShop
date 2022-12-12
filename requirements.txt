@@ -1,5 +1,5 @@
 django-environ==0.9.0
-django==3.2.16
+django==3.2
 celery~=5.2.7
 psycopg2-binary==2.9.4
 channels==3.0.4
@@ -12,3 +12,6 @@ translate
 asgiref~=3.5.2
 translate-api
 flower
+
+translators~=5.5.3
+kombu~=5.2.4

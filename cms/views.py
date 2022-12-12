@@ -3,9 +3,8 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views import View
-
 from .forms import DeclarationForm
-from .models import Fruit, Bank, Logging
+from .models import Fruit, Bank, Logging, Declaration
 from users.forms import UserLoginForm
 from django.contrib.auth import authenticate, login
 from users.models import Chat
@@ -21,7 +20,14 @@ class MainPage(View):
 
     def post(self, request):
         form = self.form(request.POST)
-        file_form = self.form(request.POST)
+        file_form = self.file_form(request.POST, request.FILES)
+        if request.FILES:
+            if file_form.is_valid():
+                file_form.save()
+                messages.success(request, 'Файл успешно загружен')
+            else:
+                messages.error(request, file_form.error_messages.get('error_file'))
+                return HttpResponseRedirect(reverse_lazy('home'))
         if form.is_valid():
             user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password'])
             if user is not None:
@@ -29,6 +35,7 @@ class MainPage(View):
                 return HttpResponseRedirect(reverse_lazy('home'))
             messages.error(request, 'Не верный логин или пароль')
             return HttpResponseRedirect(reverse_lazy('home'))
+        return HttpResponseRedirect(reverse_lazy('home'))
 
     def get(self, request):
         context = {
@@ -39,8 +46,9 @@ class MainPage(View):
             'history_chat': Chat.objects.select_related('user').order_by('-id')[:40],
             'room_name': self.room_name,
             'current_data': datetime.datetime.now(),
-            'history_logging': Logging.objects.select_related('fruit').order_by('-id')[:40],
-            'yesterday': datetime.datetime.now() - datetime.timedelta(days=1)
+            'history_logging': Logging.objects.select_related('fruit').order_by('-id')[:100],
+            'yesterday': datetime.datetime.now() - datetime.timedelta(days=1),
+            'declaration_count': Declaration.objects.filter(date=datetime.datetime.now()).count()
         }
 
         return render(request, 'cms/layout.html', context)

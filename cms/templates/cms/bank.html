@@ -15,7 +15,7 @@
         {#        progress#}
         <div class="row" style="padding: 10px;">
             <div class="col-md-6">
-                <button id="audit" type="button" class="btn" value="true"
+                <button id="audit" type="button" class="btn btn-outline-dark" value="true"
                         style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .90rem; background-color: #f6a2bf">
                     Провести бухгалтерский аудит
                 </button>
@@ -37,11 +37,11 @@
             </div>
             <div class="col-md-6">
                 <div class="text-center" style="margin-top:1%">
-                    <button id="replenish" type="button" class="btn" value="true"
+                    <button id="replenish" type="button" class="btn btn-outline-dark" value="true"
                             style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .90rem; background-color: #cbe8ba">
                         Пополнить
                     </button>
-                    <button id="withdraw" type="button" class="btn" value="false"
+                    <button id="withdraw" type="button" class="btn btn-outline-dark" value="false"
                             style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .90rem; background-color: #ffe3ae">
                         Вывести
                     </button>
@@ -50,17 +50,25 @@
         </div>
         <div class="row" style="padding: 20px">
             <div class="col-md-6">
-                <form method="POST">
-                    {{ file_form.file }}
-                    <button type="submit" class="btn" value="false"
-                            style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .90rem; background-color: #d4e3fc">
+                {% if request.user.is_authenticated %}
+                    <form id="declaration_form" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <a type="submit" class="btn btn-outline-dark btn-file"
+                           style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .90rem; background-color: #d4e3fc">
+                            Загрузить декларации
+                            {{ file_form.file }}
+                        </a>
+                    </form>
+                {% else %}
+                    <a class="btn btn-outline-dark btn-file" onclick="toastr.error('Вы должны войти в свою учетную запись, чтобы загружать декларации.')"
+                       style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .90rem; background-color: #d4e3fc">
                         Загрузить декларации
-                    </button>
-                </form>
+                    </a>
+                {% endif %}
             </div>
             <div class="col-md-6" style="padding-top: 1%;">
                 <p>
-                    Сегодня загружено: 2 шт.
+                    Сегодня загружено: <span id="declaration_count">{{ declaration_count }}</span> шт.
                 </p>
             </div>
         </div>

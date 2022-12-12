@@ -3,7 +3,7 @@ PROJECT = config
 
 # region local
 run:
-	$(MANAGE) runserver 7000
+	$(MANAGE) runserver
 
 migrations:
 	$(MANAGE) makemigrations
@@ -39,11 +39,11 @@ create_bank:
 
 # Celery
 start_worker:
-	celery -A $(PROJECT) worker -l info
+	celery -A $(PROJECT) worker --loglevel=info
 
 start_beat:
 	celery -A $(PROJECT) beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
 
 start_flower:
-	celery -A $(PROJECT) flower --port=5566
+	celery -A $(PROJECT) flower --port=5555
 # //
